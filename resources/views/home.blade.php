@@ -8,6 +8,13 @@
                     <div class="card-header">登録・更新</div>
 
                     <div class="card-body">
+                        {{-- 登録完了メッセージ --}}
+                        @if (session('status'))
+                            <div class="alert alert-success">
+                                {{ session('status') }}
+                            </div>
+                        @endif
+
                         <form method="POST" action="{{ route('store') }}">
                             @csrf
                             {{-- 名前 --}}
@@ -51,7 +58,8 @@
 
                                 <div class="col-md-6">
                                     <input v-model="password" id="password" type="password"
-                                        class="form-control @error('password') is-invalid @enderror" name="password" required>
+                                        class="form-control @error('password') is-invalid @enderror" name="password" @if(session('saved_user')) placeholder="更新が不要な場合は未入力にしてください" @endif
+                                        required>
 
                                     @error('password')
                                         <span class="invalid-feedback" role="alert">
@@ -76,9 +84,9 @@
             el: '#app',
             data: () => {
                 return {
-                    name: '',
-                    email: '',
-                    password: '',
+                    name: '{{ old('name') ?? (session('saved_user')->name ?? '') }}',
+                    email: '{{ old('email') ?? (session('saved_user')->email ?? '') }}',
+                    password: '{{ old('password') ?? '' }}',
                 }
             },
             methods: {

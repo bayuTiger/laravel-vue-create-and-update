@@ -31,17 +31,23 @@ class HomeController extends Controller
 
     public function store(Request $request)
     {
-        DB::transaction(function () use ($request) {
+        $params = [
+            'name' => $request->name,
+            'email' => $request->email,
+        ];
+        if ($request->password) {
+            $params['password'] = Hash::make($request->input(['password']));
+        }
+
+        DB::transaction(function () use ($request, $params) {
             User::updateOrCreate([
-                'name' => $request->input(['name']),
-            ], [
-                'name' => $request->input(['name']),
-                'email' => $request->input(['email']),
-                'password' => Hash::make($request->input(['password'])),
-            ]);
+                'name' => $request->name,
+            ], $params);
         });
 
         $saved_user = User::firstWhere('name', $request->input(['name']));
-        return redirect()->route('home', compact('saved_user'));
+        $status = 'ユーザー情報の登録に成功しました！';
+
+        return redirect()->route('home')->with(compact('saved_user', 'status'));
     }
 }

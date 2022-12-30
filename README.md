@@ -1,4 +1,4 @@
-# Laravel8 blade vue 同じ画面で登録と更新を行う
+# Laravel8 blade vue 同じ画面で登録・更新処理を行う
 
 ## 環境
 
@@ -16,6 +16,7 @@ php artisan serve
 
 ## 概要
 
+Userの登録・更新処理を題材に、Controller -> vue -> bladeとデータを渡していきます
 
 ## 1. テーブルを書き換える
 
@@ -58,97 +59,6 @@ class CreateUsersTable extends Migration
     }
 }
 ```
-
-2. 再定義したテーブルに合うように、Factoryのメソッドを修正します
-
-```php:UserFactory.php
-<?php
-
-namespace Database\Factories;
-
-use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
-
-class UserFactory extends Factory
-{
-    /**
-     * Define the model's default state.
-     *
-     * @return array
-     */
-    public function definition()
-    {
-        return [
-            'name' => $this->faker->unique()->name(),
-            'email' => $this->faker->unique()->safeEmail(),
-            'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-        ];
-    }
-}
-```
-
-3. fakerの生成されるデータを日本語化します
-
-```php:config/app.php
-// ...
-    'faker_locale' => 'ja_JP',
-```
-
-4. seederでfactoryを使うようにします
-
-```php:UserSeeder.php
-<?php
-
-namespace Database\Seeders;
-
-use App\Models\User;
-use Illuminate\Database\Seeder;
-
-class UserSeeder extends Seeder
-{
-    /**
-     * Run the database seeds.
-     *
-     * @return void
-     */
-    public function run(User $user)
-    {
-        User::factory()->count(10)->create();
-    }
-}
-```
-
-5. UserSeederがコマンド実行時に走るようにします
-
-```php:DatabaseSeeder.php
-<?php
-
-namespace Database\Seeders;
-
-use Illuminate\Database\Seeder;
-
-class DatabaseSeeder extends Seeder
-{
-    /**
-     * Seed the application's database.
-     *
-     * @return void
-     */
-    public function run()
-    {
-        if (config('app.env') === 'production') {
-            Log::error('本番環境でSeederの一括実行はできません。処理を終了します。');
-            return;
-        }
-        $this->call([
-            UserSeeder::class,
-        ]);
-    }
-}
-```
-
-ここまでできたら、プロジェクトルートで`php artisan db:seed`を実行し、DBにダミーデータが挿入されているか確認してください。
-10件分のUserが登録されていたら成功です！
 
 ## 2. 表示画面を作る
 
@@ -270,6 +180,7 @@ Route::post('/store', [App\Http\Controllers\HomeController::class, 'store'])->na
     </script>
 @endsection
 ```
+
 ## 3. 登録・更新処理を作る
 
 1. まずHomeController.phpに登録処理(storeメソッド)を記述します
@@ -326,37 +237,60 @@ usersテーブルを確認してみてください
 
 2. 次にupdateOrCreateメソッドを使用した形に書き換える
 
+更新時はパスワードを任意入力にしたいので、全体的に変更を加えます
+
 ```php:HomeController.php
 // ...
     public function store(Request $request)
     {
-        $user = DB::transaction(function () use ($request) {
+        $params = [
+            'name' => $request->name,
+            'email' => $request->email,
+        ];
+        if ($request->password) {
+            $params['password'] = Hash::make($request->input(['password']));
+        }
+
+        DB::transaction(function () use ($request, $params) {
             User::updateOrCreate([
-                'name' => $request->input(['name']),
-            ], [
-                'name' => $request->input(['name']),
-                'email' => $request->input(['email']),
-                'password' => Hash::make($request->input(['password'])),
-            ]);
+                'name' => $request->name,
+            ], $params);
         });
 
-        dd($user);
-
-        return redirect()->route('home', compact('user'));
+        return redirect()->route('home');
     }
 ```
 
 [updateOrCreateメソッド](https://readouble.com/laravel/8.x/ja/eloquent.html#upserts)を使用することで、入力されたnameと同じnameを持つデータが既にDBにある場合は更新処理、なければ新規登録処理になります
 1の新規登録処理で入力したデータと、name以外が違う入力値で登録ボタンを押した後、DBの値が更新されていればOKです！
 
-3. 登録・更新したユーザーの情報を持たせて、元の画面に遷移させる
+1. 登録・更新したユーザーの情報を持たせて、元の画面に遷移させる
 
 updateOrCreateメソッドの条件にnameを使用しているので同様に、nameを元に直近で操作したUserを引っ張ってきます
 
 ```php:HomeController.php
+// ...
 $saved_user = User::firstWhere('name', $request->input(['name']));
-return redirect()->route('home', compact('saved_user'));
+$status = 'ユーザー情報の登録に成功しました！';
+return redirect()->route('home')->with(compact('saved_user', 'status'));
 ```
 
 ## 4. 更新画面用にscriptを修正する
 
+vueのデータにControllerから値を渡します
+
+```php:home.blade.php
+<script>
+// ...
+    name: '{{ old('name') ?? (session('saved_user')->name ?? '') }}',
+    email: '{{ old('email') ?? (session('saved_user')->email ?? '') }}',
+    password: '{{ old('password') ?? '' }}',
+// ...
+</script>
+```
+
+## ex. Githubのリポジトリ
+
+今回作成したアプリケーションのリポジトリです↓
+
+https://github.com/bayuTiger/laravel-vue-create-and-update
