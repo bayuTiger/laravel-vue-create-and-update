@@ -152,14 +152,177 @@ class DatabaseSeeder extends Seeder
 
 ## 2. 表示画面を作る
 
-既存のhome.blade.phpにscriptを追加する形で実装します
-環境構築はこちらの記事で
+既存のhome.blade.phpを改変する形で実装します
+(機能的にはRegister画面と同じことをします)
+※個々のbladeファイルに個別のvueを適用させる方法は以下の記事で↓
 
 https://qiita.com/akitika/items/c451954d8890385e9641
 
-```php:home.blade.php
+1. まずRoutingを書き換えます
+
+```php:route/web.php
+// ...
+Route::post('/store', [App\Http\Controllers\HomeController::class, 'store'])->name('store');
 ```
+
+2. 次に登録画面を作成します
+   - 画面レイアウトはhome.blade.phpを、入力欄はauth/login.phpを踏襲します
+   - 登録処理にscriptは何ら影響を及ぼしませんが、更新時に必要なので、動作確認用にscriptを記載します
+
+```php:home.blade.php
+@extends('layouts.app')
+
+@section('content')
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">登録・更新</div>
+
+                    <div class="card-body">
+                        <form method="POST" action="{{ route('store') }}">
+                            @csrf
+                            {{-- 名前 --}}
+                            <div class="row mb-3">
+                                <label for="name"
+                                    class="col-md-4 col-form-label text-md-end">{{ __('名前') }}</label>
+
+                                <div class="col-md-6">
+                                    <input v-model="name" id="name" type="text"
+                                        class="form-control @error('name') is-invalid @enderror" name="name" required>
+
+                                    @error('name')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            {{-- メールアドレス --}}
+                            <div class="row mb-3">
+                                <label for="email"
+                                    class="col-md-4 col-form-label text-md-end">{{ __('メールアドレス') }}</label>
+
+                                <div class="col-md-6">
+                                    <input v-model="email" id="email" type="email"
+                                        class="form-control @error('email') is-invalid @enderror" name="email" required>
+
+                                    @error('email')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            {{-- パスワード --}}
+                            <div class="row mb-3">
+                                <label for="email"
+                                    class="col-md-4 col-form-label text-md-end">{{ __('パスワード') }}</label>
+
+                                <div class="col-md-6">
+                                    <input v-model="password" id="password" type="password"
+                                        class="form-control @error('password') is-invalid @enderror" name="password" required>
+
+                                    @error('password')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
+                            </div>
+                            <button type="submit" @click="confirm">登録</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+@endsection
+
+@section('js')
+    <script>
+        const app = new Vue({
+            el: '#app',
+            data: () => {
+                return {
+                    name: '',
+                    email: '',
+                    password: '',
+                }
+            },
+            methods: {
+                confirm: function(e) {
+                    if (confirm('登録しますか？')) {
+                        return true;
+                    } else {
+                        console.log(this.name);
+                        console.log(this.email);
+                        console.log(this.password);
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        });
+    </script>
+@endsection
+```
+
+3. 最後にHomeController.phpに登録処理(storeメソッド)を記述します
+
+```php:HomeController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+
+class HomeController extends Controller
+{
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        // $this->middleware('auth');
+    }
+
+    /**
+     * Show the application dashboard.
+     *
+     * @return \Illuminate\Contracts\Support\Renderable
+     */
+    public function index()
+    {
+        return view('home');
+    }
+
+    public function store(Request $request)
+    {
+        DB::transaction(function () use ($request) {
+            User::create([
+                'name' => $request->input(['name']),
+                'email' => $request->input(['email']),
+                'password' => Hash::make($request->input(['password'])),
+            ]);
+        });
+
+        return redirect()->route('home');
+    }
+}
+```
+
+usersテーブルを確認してみてください
+入力したuserが登録されていればOKです！
 
 ## 3. 登録・更新処理を作る
 
-## 4. 更新用のscriptを書く
+## 4. 更新画面用にscriptを修正する

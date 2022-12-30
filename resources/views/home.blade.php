@@ -11,39 +11,54 @@
                         <form method="POST" action="{{ route('store') }}">
                             @csrf
                             {{-- 名前 --}}
-                            <div class="col-md-6">
-                                <input v-model="name" id="name" type="text"
-                                    class="form-control @error('name') is-invalid @enderror" name="name" required>
+                            <div class="row mb-3">
+                                <label for="name"
+                                    class="col-md-4 col-form-label text-md-end">{{ __('名前') }}</label>
 
-                                @error('name')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
+                                <div class="col-md-6">
+                                    <input v-model="name" id="name" type="text"
+                                        class="form-control @error('name') is-invalid @enderror" name="name" required>
+
+                                    @error('name')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
                             </div>
 
                             {{-- メールアドレス --}}
-                            <div class="col-md-6">
-                                <input v-model="email" id="email" type="email"
-                                    class="form-control @error('email') is-invalid @enderror" name="email" required>
+                            <div class="row mb-3">
+                                <label for="email"
+                                    class="col-md-4 col-form-label text-md-end">{{ __('メールアドレス') }}</label>
 
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
+                                <div class="col-md-6">
+                                    <input v-model="email" id="email" type="email"
+                                        class="form-control @error('email') is-invalid @enderror" name="email" required>
+
+                                    @error('email')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
                             </div>
 
                             {{-- パスワード --}}
-                            <div class="col-md-6">
-                                <input v-model="password" id="password" type="password"
-                                    class="form-control @error('password') is-invalid @enderror" name="password" required>
+                            <div class="row mb-3">
+                                <label for="email"
+                                    class="col-md-4 col-form-label text-md-end">{{ __('パスワード') }}</label>
 
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
+                                <div class="col-md-6">
+                                    <input v-model="password" id="password" type="password"
+                                        class="form-control @error('password') is-invalid @enderror" name="password" required>
+
+                                    @error('password')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                </div>
                             </div>
                             <button type="submit" @click="confirm">登録</button>
                         </form>
@@ -68,9 +83,9 @@
             },
             methods: {
                 confirm: function(e) {
-                    if(confirm('登録しますか？')){
+                    if (confirm('登録しますか？')) {
                         return true;
-                    }else{
+                    } else {
                         console.log(this.name);
                         console.log(this.email);
                         console.log(this.password);
