@@ -32,13 +32,16 @@ class HomeController extends Controller
     public function store(Request $request)
     {
         DB::transaction(function () use ($request) {
-            User::create([
+            User::updateOrCreate([
+                'name' => $request->input(['name']),
+            ], [
                 'name' => $request->input(['name']),
                 'email' => $request->input(['email']),
                 'password' => Hash::make($request->input(['password'])),
             ]);
         });
 
-        return redirect()->route('home');
+        $saved_user = User::firstWhere('name', $request->input(['name']));
+        return redirect()->route('home', compact('saved_user'));
     }
 }

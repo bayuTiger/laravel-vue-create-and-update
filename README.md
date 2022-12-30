@@ -270,8 +270,9 @@ Route::post('/store', [App\Http\Controllers\HomeController::class, 'store'])->na
     </script>
 @endsection
 ```
+## 3. 登録・更新処理を作る
 
-3. 最後にHomeController.phpに登録処理(storeメソッド)を記述します
+1. まずHomeController.phpに登録処理(storeメソッド)を記述します
 
 ```php:HomeController.php
 <?php
@@ -323,6 +324,39 @@ class HomeController extends Controller
 usersテーブルを確認してみてください
 入力したuserが登録されていればOKです！
 
-## 3. 登録・更新処理を作る
+2. 次にupdateOrCreateメソッドを使用した形に書き換える
+
+```php:HomeController.php
+// ...
+    public function store(Request $request)
+    {
+        $user = DB::transaction(function () use ($request) {
+            User::updateOrCreate([
+                'name' => $request->input(['name']),
+            ], [
+                'name' => $request->input(['name']),
+                'email' => $request->input(['email']),
+                'password' => Hash::make($request->input(['password'])),
+            ]);
+        });
+
+        dd($user);
+
+        return redirect()->route('home', compact('user'));
+    }
+```
+
+[updateOrCreateメソッド](https://readouble.com/laravel/8.x/ja/eloquent.html#upserts)を使用することで、入力されたnameと同じnameを持つデータが既にDBにある場合は更新処理、なければ新規登録処理になります
+1の新規登録処理で入力したデータと、name以外が違う入力値で登録ボタンを押した後、DBの値が更新されていればOKです！
+
+3. 登録・更新したユーザーの情報を持たせて、元の画面に遷移させる
+
+updateOrCreateメソッドの条件にnameを使用しているので同様に、nameを元に直近で操作したUserを引っ張ってきます
+
+```php:HomeController.php
+$saved_user = User::firstWhere('name', $request->input(['name']));
+return redirect()->route('home', compact('saved_user'));
+```
 
 ## 4. 更新画面用にscriptを修正する
+
