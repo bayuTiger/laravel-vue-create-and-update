@@ -13,7 +13,7 @@
                             {{-- 名前 --}}
                             <div class="col-md-6">
                                 <input v-model="name" id="name" type="text"
-                                    class="form-control @error('name') is-invalid @enderror" name="text" required>
+                                    class="form-control @error('name') is-invalid @enderror" name="name" required>
 
                                 @error('name')
                                     <span class="invalid-feedback" role="alert">
@@ -45,6 +45,7 @@
                                     </span>
                                 @enderror
                             </div>
+                            <button type="submit" @click="confirm">登録</button>
                         </form>
                     </div>
                 </div>
@@ -65,8 +66,18 @@
                     password: '',
                 }
             },
-            mounted: function() {
-                console.log('mounted');
+            methods: {
+                confirm: function(e) {
+                    if(confirm('登録しますか？')){
+                        return true;
+                    }else{
+                        console.log(this.name);
+                        console.log(this.email);
+                        console.log(this.password);
+                        e.preventDefault();
+                        return false;
+                    }
+                }
             }
         });
     </script>

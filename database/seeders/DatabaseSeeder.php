@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         if (config('app.env') === 'production') {
             Log::error('本番環境でSeederの一括実行はできません。処理を終了します。');
+
             return;
         }
         $this->call([
